@@ -15,6 +15,7 @@ env:
   AWS_REGION: ap-south-1
   PROJECT_NAME: compressedme-aatif
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-scan-and-push:
