@@ -1,0 +1,112 @@
+name: compressedME DevSecOps Pipeline
+
+# Pipeline kab chalegi? Jab main branch par code push hoga
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend-api/**'
+      - 'lambda-processor/**'
+      - 'terraform/**'
+      - '.github/workflows/**'
+
+env:
+  AWS_REGION: ap-south-1
+  PROJECT_NAME: compressedme-aatif
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+
+jobs:
+  build-scan-and-push:
+    name: Build, Scan & Push Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ==========================================
+      # 1. NODE.JS BACKEND IMAGE
+      # ==========================================
+      - name: Build Backend Docker Image
+        working-directory: ./backend-api
+        run: |
+          docker build -t ${{ env.PROJECT_NAME }}-backend .
+
+      - name: DevSecOps - Run Trivy Scan on Backend Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.PROJECT_NAME }}-backend'
+          format: 'table'
+          exit-code: '1' # Agar CRITICAL bug mila toh pipeline yahi rok dega
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+
+      - name: Tag & Push Backend Image to ECR
+        run: |
+          docker tag ${{ env.PROJECT_NAME }}-backend:latest ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:latest
+
+      # ==========================================
+      # 2. PYTHON LAMBDA IMAGE
+      # ==========================================
+      - name: Build Lambda Docker Image
+        working-directory: ./lambda-processor
+        run: |
+          # Yahan platform aur provenance flags diye hain taaki AWS reject na kare
+          docker build --provenance=false --platform=linux/amd64 -t ${{ env.PROJECT_NAME }}-lambda .
+
+      - name: DevSecOps - Run Trivy Scan on Lambda Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.PROJECT_NAME }}-lambda'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+
+      - name: Tag & Push Lambda Image to ECR
+        run: |
+          docker tag ${{ env.PROJECT_NAME }}-lambda:latest ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-lambda:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-lambda:latest
+
+  deploy-infrastructure:
+    name: Terraform Apply
+    needs: build-scan-and-push # Yeh job tab tak nahi chalegi jab tak image push na ho jaye
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
