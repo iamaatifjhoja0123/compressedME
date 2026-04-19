@@ -1,18 +1,14 @@
-# Use lightweight Node.js alpine image
-FROM node:18-alpine
+# AWS Lambda ki official Node.js base image
+FROM public.ecr.aws/lambda/nodejs:18
 
-# Create app directory
-WORKDIR /usr/src/app
+# Copy dependencies
+COPY package*.json ${LAMBDA_TASK_ROOT}/
 
-# Install app dependencies
-COPY package*.json ./
+# Install dependencies
 RUN npm install --production
 
-# Bundle app source
-COPY src/ ./src/
+# Copy application code
+COPY src/ ${LAMBDA_TASK_ROOT}/src/
 
-# Expose port
-EXPOSE 8080
-
-# Command to run the app
-CMD [ "node", "src/index.js" ]
+# Lambda Handler point karna
+CMD [ "src/index.handler" ]

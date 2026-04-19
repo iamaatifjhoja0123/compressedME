@@ -29,21 +29,20 @@ resource "aws_iam_policy" "lambda_custom_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        # S3 Raw Bucket se sirf Read karna
+        # Backend Node.js ke liye S3 PutObject Permission (Presigned URL ke liye)
         Effect = "Allow"
-        Action = ["s3:GetObject"]
+        Action = ["s3:GetObject", "s3:PutObject"]
         Resource = "${aws_s3_bucket.raw_bucket.arn}/*"
       },
       {
-        # S3 Processed Bucket mein Read aur Write dono karna
         Effect = "Allow"
         Action = ["s3:PutObject", "s3:GetObject"]
         Resource = "${aws_s3_bucket.processed_bucket.arn}/*"
       },
       {
-        # DynamoDB mein Update karna
+        # DynamoDB read/write dono ki permission
         Effect = "Allow"
-        Action = ["dynamodb:UpdateItem"]
+        Action = ["dynamodb:UpdateItem", "dynamodb:PutItem", "dynamodb:GetItem"]
         Resource = aws_dynamodb_table.jobs_table.arn
       }
     ]
