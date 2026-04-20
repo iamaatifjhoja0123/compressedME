@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = 'http://localhost:8080/api'; // Aapka Node.js server URL
+const BACKEND_URL = import.meta.env.VITE_API_URL; 
 
 const FileUploader = () => {
     const [file, setFile] = useState(null);
@@ -70,7 +70,6 @@ const FileUploader = () => {
         }
         return () => clearInterval(interval);
     }, [status, jobId]);
-
 
     return (
         <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto', fontFamily: 'sans-serif' }}>
