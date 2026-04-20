@@ -60,9 +60,9 @@ def handler(event, context):
             
             # 2. Compress based on file extension
             print(f"Compressing {file_ext} file...")
-            if file_ext in ['jpg', 'jpeg', 'png']:
+            if file_ext in ['jpg', 'jpeg', 'png', 'jfif', 'webp']:
                 compress_image(download_path, upload_path)
-                content_type = f'image/{file_ext}'
+                content_type = 'image/jpeg' if file_ext == 'jfif' else f'image/{file_ext}'
             elif file_ext == 'pdf':
                 compress_pdf(download_path, upload_path)
                 content_type = 'application/pdf'
