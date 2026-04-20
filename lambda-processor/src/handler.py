@@ -6,26 +6,35 @@ from urllib.parse import unquote_plus
 
 # AWS SDK Clients
 s3_client = boto3.client('s3')
-# Boto3 resource for DynamoDB is easier to use for updating items
 dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
 
 PROCESSED_BUCKET = os.environ.get('PROCESSED_BUCKET_NAME', 'compressedme-processed-files')
 TABLE_NAME = os.environ.get('DYNAMO_TABLE_NAME', 'compressedme-jobs')
 
 def compress_image(input_path, output_path):
-    """Images ko Pillow se compress karna"""
+    """Images ko Pillow se aggressive compress karna"""
     with Image.open(input_path) as img:
         # Convert RGBA to RGB for JPEG compatibility
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        # quality=60 se size kafi kam ho jata hai bina zyada blur hue
-        img.save(output_path, optimize=True, quality=60)
+        # Quality 50 rakhi hai taaki heavy compression ho
+        img.save(output_path, optimize=True, quality=50)
 
 def compress_pdf(input_path, output_path):
-    """PDFs ko PyMuPDF se compress karna"""
+    """PDFs ko PyMuPDF ke sabse aggressive flags se compress karna"""
     doc = fitz.open(input_path)
-    # garbage=4 removes unused objects, deflate=True compresses streams
-    doc.save(output_path, garbage=4, deflate=True)
+    
+    # Yeh AWS Lambda ke liye PDF compression ka sabse BEST combination hai
+    doc.save(
+        output_path, 
+        garbage=4,             # Level 4: Saare unused objects aur duplicate elements delete
+        deflate=True,          # Data streams ko compress karta hai
+        clean=True,            # Internal structure ko sanitize aur clean karta hai
+        linear=True,           # Fast Web View ke liye optimize karta hai
+        deflate_images=True,   # PDF ke andar ki images ko force-compress karta hai
+        deflate_fonts=True     # PDF ke andar ke fonts ko compress karta hai
+    )
+    doc.close()
 
 def handler(event, context):
     """Main Lambda Handler jo S3 trigger par chalega"""
@@ -36,12 +45,11 @@ def handler(event, context):
             source_bucket = record['s3']['bucket']['name']
             key = unquote_plus(record['s3']['object']['key'])
             
-            # Key format 'jobId.extension' hai (Node.js backend se)
-            # Isliye split karke jobId nikal rahe hain
+            # Key format 'jobId.extension' hai
             job_id = key.rsplit('.', 1)[0]
             file_ext = key.rsplit('.', 1)[-1].lower()
             
-            # Lambda ke paas sirf /tmp folder mein likhne ki permission hoti hai
+            # Lambda /tmp folder mapping
             download_path = f"/tmp/{key}"
             compressed_filename = f"compressed-{key}"
             upload_path = f"/tmp/{compressed_filename}"
@@ -51,7 +59,7 @@ def handler(event, context):
             s3_client.download_file(source_bucket, key, download_path)
             
             # 2. Compress based on file extension
-            print("Compressing file...")
+            print(f"Compressing {file_ext} file...")
             if file_ext in ['jpg', 'jpeg', 'png']:
                 compress_image(download_path, upload_path)
                 content_type = f'image/{file_ext}'
@@ -60,6 +68,16 @@ def handler(event, context):
                 content_type = 'application/pdf'
             else:
                 raise Exception(f"Unsupported file type: {file_ext}")
+                
+            # Extra Check: Agar size kam na hua ho, toh original file hi bhej do
+            # (Kuch PDFs already perfectly compressed hoti hain)
+            original_size = os.path.getsize(download_path)
+            compressed_size = os.path.getsize(upload_path)
+            print(f"Original Size: {original_size} bytes | Compressed Size: {compressed_size} bytes")
+            
+            if compressed_size >= original_size:
+                print("No compression achieved (File might already be highly optimized). Uploading original.")
+                upload_path = download_path 
                 
             # 3. Upload to Processed S3 Bucket
             print(f"Uploading to {PROCESSED_BUCKET}...")
@@ -90,15 +108,14 @@ def handler(event, context):
                 }
             )
             
-            # 6. Cleanup /tmp directory
-            os.remove(download_path)
-            os.remove(upload_path)
+            # 6. Cleanup /tmp directory (taaki Lambda memory full na ho)
+            if os.path.exists(download_path): os.remove(download_path)
+            if upload_path != download_path and os.path.exists(upload_path): os.remove(upload_path)
             
         return {"statusCode": 200, "body": "Compression Success"}
         
     except Exception as e:
         print(f"Error occurred: {str(e)}")
-        # Agar error aaye, toh DynamoDB mein status ERROR set kar do taaki React hang na ho
         if job_id:
             try:
                 table = dynamodb.Table(TABLE_NAME)
