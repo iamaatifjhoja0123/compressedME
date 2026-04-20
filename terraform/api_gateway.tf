@@ -26,9 +26,9 @@ resource "aws_apigatewayv2_api" "http_api" {
   
   # CORS set karna taaki React App (S3/CloudFront) access kar sake
   cors_configuration {
-    allow_origins = ["*"] # Production mein isse CloudFront URL se replace karein
-    allow_methods = ["GET", "POST", "OPTIONS"]
-    allow_headers = ["Content-Type", "Authorization"]
+    allow_origins = ["*"]
+    allow_methods = ["*"]
+    allow_headers = ["*"]
   }
 }
 
