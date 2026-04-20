@@ -1,8 +1,9 @@
 import os
 import boto3
-import fitz  # PyMuPDF library for PDFs
+import fitz  # PyMuPDF library for PDFs fallback
 from PIL import Image
 from urllib.parse import unquote_plus
+import subprocess # Ghostscript chalane ke liye zaroori
 
 # AWS SDK Clients
 s3_client = boto3.client('s3')
@@ -31,20 +32,41 @@ def compress_image(input_path, output_path, ext):
             img.save(output_path)
 
 def compress_pdf(input_path, output_path):
-    """PDFs ko PyMuPDF ke sabse aggressive flags se compress karna"""
-    doc = fitz.open(input_path)
-    
-    # Yeh AWS Lambda ke liye PDF compression ka sabse BEST combination hai
-    doc.save(
-        output_path, 
-        garbage=4,             # Level 4: Saare unused objects aur duplicate elements delete
-        deflate=True,          # Data streams ko compress karta hai
-        clean=True,            # Internal structure ko sanitize aur clean karta hai
-        linear=True,           # Fast Web View ke liye optimize karta hai
-        deflate_images=True,   # PDF ke andar ki images ko force-compress karta hai
-        deflate_fonts=True     # PDF ke andar ke fonts ko compress karta hai
-    )
-    doc.close()
+    """Ghostscript ka use karke aggressive PDF compression (Industry Standard)"""
+    try:
+        # Ghostscript command: PDF ke andar ki images ko compress karega
+        command = [
+            "gs", 
+            "-sDEVICE=pdfwrite", 
+            "-dCompatibilityLevel=1.4", 
+            "-dPDFSETTINGS=/screen", # Sabse lowest quality (screen reading ke liye best)
+            "-dNOPAUSE", 
+            "-dQUIET", 
+            "-dBATCH", 
+            f"-sOutputFile={output_path}", 
+            input_path
+        ]
+        
+        # Command ko shell mein run karna
+        result = subprocess.run(command, capture_output=True, text=True)
+        
+        # Agar Ghostscript fail ho jaye (ya file create na ho) toh humara purana PyMuPDF fallback
+        if result.returncode != 0 or not os.path.exists(output_path):
+            print(f"Ghostscript failed (Return code: {result.returncode}). Falling back to PyMuPDF.")
+            doc = fitz.open(input_path)
+            doc.save(
+                output_path, 
+                garbage=4, deflate=True, clean=True, linear=True, 
+                deflate_images=True, deflate_fonts=True
+            )
+            doc.close()
+            
+    except Exception as e:
+        print(f"PDF Compression Error: {e}")
+        # Ek aur final fallback
+        doc = fitz.open(input_path)
+        doc.save(output_path, garbage=4, deflate=True)
+        doc.close()
 
 def handler(event, context):
     """Main Lambda Handler jo S3 trigger par chalega"""
@@ -70,7 +92,6 @@ def handler(event, context):
             # 2. Compress based on file extension
             print(f"Compressing {file_ext} file...")
             if file_ext in ['jpg', 'jpeg', 'png', 'jfif', 'webp']:
-                # Dhyan dein: Yahan humne file_ext bhi pass kiya hai function mein
                 compress_image(download_path, upload_path, file_ext)
                 content_type = 'image/jpeg' if file_ext == 'jfif' else f'image/{file_ext}'
             elif file_ext == 'pdf':

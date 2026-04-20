@@ -1,14 +1,15 @@
-# AWS Lambda ki official Python 3.9 base image
-FROM public.ecr.aws/lambda/python:3.9
+# AWS Lambda Python Base Image
+FROM public.ecr.aws/lambda/python:3.10
 
-# Requirements copy karna
+# Install Ghostscript for heavy PDF compression
+RUN yum -y install ghostscript && yum clean all
+
+# Copy requirements and install
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
+RUN pip install -r requirements.txt
 
-# Dependencies install karna (boto3, Pillow, PyMuPDF)
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy application code
+COPY src/ ${LAMBDA_TASK_ROOT}/
 
-# Hamara logic /src folder se copy karna
-COPY src/ ${LAMBDA_TASK_ROOT}
-
-# Lambda handler function ko point karna (file_name.function_name)
+# Set handler
 CMD [ "handler.handler" ]
