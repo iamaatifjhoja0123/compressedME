@@ -80,7 +80,7 @@ resource "aws_cloudfront_distribution" "react_cdn" {
 
   # Naya SSL Certificate Configuration
   viewer_certificate {
-    acm_certificate_arn      = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # <-- YAHAN APNA ASLI ARN PASTE KAREIN
+    acm_certificate_arn      = "arn:aws:acm:us-east-1:894759051454:certificate/dbbfe733-5bf0-4f42-ac7a-2db09ca13027" 
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
