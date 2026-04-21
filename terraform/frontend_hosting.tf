@@ -34,6 +34,9 @@ resource "aws_cloudfront_distribution" "react_cdn" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # Cheapest option (USA, Europe, Asia)
 
+  # Custom Domain (Aapka Subdomain) Yahan Add Kiya Gaya Hai
+  aliases = ["compressedme.jhoja.tech"]
+
   origin {
     domain_name              = aws_s3_bucket.frontend_bucket.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
@@ -75,8 +78,11 @@ resource "aws_cloudfront_distribution" "react_cdn" {
     }
   }
 
+  # Naya SSL Certificate Configuration
   viewer_certificate {
-    cloudfront_default_certificate = true # Free SSL Certificate
+    acm_certificate_arn      = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # <-- YAHAN APNA ASLI ARN PASTE KAREIN
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 }
 
@@ -103,8 +109,13 @@ resource "aws_s3_bucket_policy" "frontend_bucket_policy" {
   })
 }
 
-# Website ka final URL display karne ke liye
-output "website_url" {
+# Website ka final URLs display karne ke liye
+output "cloudfront_url" {
   value       = "https://${aws_cloudfront_distribution.react_cdn.domain_name}"
-  description = "Aapki React Website ka Live URL"
+  description = "website ka default CloudFront URL"
+}
+
+output "custom_domain_url" {
+  value       = "https://compressedme.jhoja.tech"
+  description = "website ka LIVE Custom Domain URL"
 }
