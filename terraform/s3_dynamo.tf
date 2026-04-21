@@ -11,6 +11,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw_bucket_lifecycle" {
     id     = "auto-delete-raw-files-after-24-hours"
     status = "Enabled"
 
+    # YAHAN FIX HAI: Empty filter means apply to ALL objects in the bucket
+    filter {} 
+
     expiration {
       days = 1
     }
@@ -46,6 +49,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "processed_bucket_lifecycle" {
   rule {
     id     = "auto-delete-processed-files-after-24-hours"
     status = "Enabled"
+
+    # YAHAN FIX HAI: Empty filter means apply to ALL objects in the bucket
+    filter {}
 
     expiration {
       days = 1
