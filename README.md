@@ -72,4 +72,4 @@ aws s3 sync dist/ s3://<your-frontend-bucket> --delete
 aws cloudfront create-invalidation --distribution-id <your-cloudfront-id> --paths "/*"
 
 ---
-*Architected and developed by [Mohd Aatif Jhoja](https://github.com/iamaatifjhoja0123) | Cloud & DevOps Engineer*
+*Architected and developed by [Mohd Aatif Jhoja](www.linkedin.com/in/mohd-aatif-jhoja) | Cloud & DevOps Engineer*

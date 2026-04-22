@@ -10,7 +10,7 @@ resource "aws_lambda_function" "backend_api_lambda" {
     variables = {
       RAW_BUCKET_NAME   = aws_s3_bucket.raw_bucket.bucket
       DYNAMO_TABLE_NAME = aws_dynamodb_table.jobs_table.name
-      NODE_ENV          = "lambda" # Yeh bata raha hai ki app Lambda me hai
+      NODE_ENV          = "lambda" 
     }
   }
 

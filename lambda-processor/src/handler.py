@@ -19,7 +19,6 @@ def compress_image(input_path, output_path, ext):
         if img.mode in ("RGBA", "P") and ext in ['jpg', 'jpeg', 'jfif']:
             img = img.convert("RGB")
         
-        # Explicit format batana taaki Pillow confuse na ho
         if ext in ['jpg', 'jpeg', 'jfif']:
             # jfif ko hum directly JPEG format dekar save karenge
             img.save(output_path, format='JPEG', optimize=True, quality=50)
@@ -39,7 +38,7 @@ def compress_pdf(input_path, output_path):
             "gs", 
             "-sDEVICE=pdfwrite", 
             "-dCompatibilityLevel=1.4", 
-            "-dPDFSETTINGS=/screen", # Sabse lowest quality (screen reading ke liye best)
+            "-dPDFSETTINGS=/screen",
             "-dNOPAUSE", 
             "-dQUIET", 
             "-dBATCH", 
@@ -47,10 +46,9 @@ def compress_pdf(input_path, output_path):
             input_path
         ]
         
-        # Command ko shell mein run karna
         result = subprocess.run(command, capture_output=True, text=True)
         
-        # Agar Ghostscript fail ho jaye (ya file create na ho) toh humara purana PyMuPDF fallback
+        # Agar Ghostscript fail ho jaye, ya file create na ho.
         if result.returncode != 0 or not os.path.exists(output_path):
             print(f"Ghostscript failed (Return code: {result.returncode}). Falling back to PyMuPDF.")
             doc = fitz.open(input_path)
@@ -76,20 +74,16 @@ def handler(event, context):
             source_bucket = record['s3']['bucket']['name']
             key = unquote_plus(record['s3']['object']['key'])
             
-            # Key format 'jobId.extension' hai
             job_id = key.rsplit('.', 1)[0]
             file_ext = key.rsplit('.', 1)[-1].lower()
             
-            # Lambda /tmp folder mapping
             download_path = f"/tmp/{key}"
             compressed_filename = f"compressed-{key}"
             upload_path = f"/tmp/{compressed_filename}"
             
-            # 1. Download file from Raw S3 Bucket
             print(f"Downloading {key} from {source_bucket}...")
             s3_client.download_file(source_bucket, key, download_path)
             
-            # 2. Compress based on file extension
             print(f"Compressing {file_ext} file...")
             if file_ext in ['jpg', 'jpeg', 'png', 'jfif', 'webp']:
                 compress_image(download_path, upload_path, file_ext)
@@ -125,7 +119,6 @@ def handler(event, context):
                 Params={
                     'Bucket': PROCESSED_BUCKET, 
                     'Key': compressed_filename,
-                    # YAHAN FIX HAI: Browser ko force karta hai file download karne ke liye
                     'ResponseContentDisposition': f'attachment; filename="{compressed_filename}"'
                 },
                 ExpiresIn=3600

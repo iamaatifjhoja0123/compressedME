@@ -8,9 +8,6 @@ const serverless = require('serverless-http');
 
 const app = express();
 
-// ==========================================
-// BULLETPROOF CORS MIDDLEWARE
-// ==========================================
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -25,18 +22,11 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// ==========================================
-// AWS CLIENTS SETUP
-// ==========================================
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'ap-south-1' });
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-south-1' });
 
 const RAW_BUCKET_NAME = process.env.RAW_BUCKET_NAME || 'compressedme-raw-files';
 const DYNAMO_TABLE_NAME = process.env.DYNAMO_TABLE_NAME || 'compressedme-jobs';
-
-// ==========================================
-// ROUTES
-// ==========================================
 
 // 1. Root and Health Checks
 app.get('/', (req, res) => res.status(200).json({ status: 'API is running' }));
@@ -97,7 +87,4 @@ app.get('/api/status/:jobId', async (req, res) => {
     }
 });
 
-// ==========================================
-// LAMBDA EXPORT
-// ==========================================
 module.exports.handler = serverless(app);

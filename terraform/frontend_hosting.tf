@@ -1,6 +1,4 @@
-# ==========================================
 # 1. S3 Bucket for React Frontend
-# ==========================================
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "${var.project_name}-frontend-app"
 }
@@ -14,9 +12,7 @@ resource "aws_s3_bucket_public_access_block" "frontend_block" {
   restrict_public_buckets = true
 }
 
-# ==========================================
 # 2. CloudFront Origin Access Control (OAC)
-# ==========================================
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "${var.project_name}-frontend-oac"
   description                       = "OAC policy for React S3 Bucket"
@@ -25,16 +21,14 @@ resource "aws_cloudfront_origin_access_control" "oac" {
   signing_protocol                  = "sigv4"
 }
 
-# ==========================================
 # 3. CloudFront Distribution (CDN)
-# ==========================================
 resource "aws_cloudfront_distribution" "react_cdn" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
-  price_class         = "PriceClass_100" # Cheapest option (USA, Europe, Asia)
+  price_class         = "PriceClass_100" # Cheapest option 
 
-  # Custom Domain (Aapka Subdomain) Yahan Add Kiya Gaya Hai
+  # Custom Domain 
   aliases = ["compressedme.jhoja.tech"]
 
   origin {
@@ -86,9 +80,6 @@ resource "aws_cloudfront_distribution" "react_cdn" {
   }
 }
 
-# ==========================================
-# 4. S3 Bucket Policy (Allow CloudFront)
-# ==========================================
 resource "aws_s3_bucket_policy" "frontend_bucket_policy" {
   bucket = aws_s3_bucket.frontend_bucket.id
   policy = jsonencode({

@@ -6,7 +6,7 @@ resource "aws_lambda_function" "processor_lambda" {
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.lambda_repo.repository_url}:latest"
   
-  timeout       = 60  # Image/PDF processing mein thoda time lag sakta hai
+  timeout       = 60  # Image/PDF processing mein thoda time lagta h,
   memory_size   = 512 # Pillow/PyMuPDF ko RAM chahiye hota hai
 
   environment {
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "allow_s3_invocation" {
   source_arn    = aws_s3_bucket.raw_bucket.arn
 }
 
-# S3 Bucket Notification: Jab bhi 'raw' bucket me file aaye, Lambda chalao
+# S3 Bucket Notification: Jab bhi 'raw' bucket me file aaye, 
 resource "aws_s3_bucket_notification" "bucket_notification" {
   bucket = aws_s3_bucket.raw_bucket.id
 

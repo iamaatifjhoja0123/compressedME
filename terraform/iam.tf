@@ -1,4 +1,4 @@
-# Lambda Assume Role (Lambda ko AWS services use karne ki ijazat dena)
+# Lambda Assume Role (Lambda ko AWS services use karna
 resource "aws_iam_role" "lambda_exec_role" {
   name = "${var.project_name}-lambda-role"
 

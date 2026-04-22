@@ -11,7 +11,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw_bucket_lifecycle" {
     id     = "auto-delete-raw-files-after-24-hours"
     status = "Enabled"
 
-    # YAHAN FIX HAI: Empty filter means apply to ALL objects in the bucket
     filter {} 
 
     expiration {
@@ -31,7 +30,7 @@ resource "aws_s3_bucket_cors_configuration" "raw_bucket_cors" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["PUT", "POST", "GET"]
-    allowed_origins = ["*"] # Production mein isse apne frontend URL se replace karein
+    allowed_origins = ["*"] 
     expose_headers  = []
     max_age_seconds = 3000
   }
@@ -50,7 +49,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "processed_bucket_lifecycle" {
     id     = "auto-delete-processed-files-after-24-hours"
     status = "Enabled"
 
-    # YAHAN FIX HAI: Empty filter means apply to ALL objects in the bucket
     filter {}
 
     expiration {
@@ -67,6 +65,6 @@ resource "aws_dynamodb_table" "jobs_table" {
 
   attribute {
     name = "job_id"
-    type = "S" # String
+    type = "S" 
   }
 }

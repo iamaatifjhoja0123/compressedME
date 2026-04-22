@@ -1,6 +1,5 @@
 name: compressedME DevSecOps Pipeline
 
-# Pipeline kab chalegi? Jab main branch par code push hoga
 on:
   push:
     branches:
@@ -36,9 +35,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ==========================================
       # 1. NODE.JS BACKEND IMAGE
-      # ==========================================
       - name: Build Backend Docker Image
         working-directory: ./backend-api
         run: |
@@ -59,9 +56,7 @@ jobs:
           docker tag ${{ env.PROJECT_NAME }}-backend:latest ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:latest
           docker push ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:latest
 
-      # ==========================================
       # 2. PYTHON LAMBDA IMAGE
-      # ==========================================
       - name: Build Lambda Docker Image
         working-directory: ./lambda-processor
         run: |
