@@ -118,10 +118,16 @@ def handler(event, context):
                 ExtraArgs={'ContentType': content_type}
             )
             
-            # 4. Generate Download URL (Valid for 1 Hour)
+            # 4. Generate Download URL (Valid for 1 Hour) WITH FORCED DOWNLOAD
+            print("Generating forced download presigned URL...")
             download_url = s3_client.generate_presigned_url(
                 'get_object',
-                Params={'Bucket': PROCESSED_BUCKET, 'Key': compressed_filename},
+                Params={
+                    'Bucket': PROCESSED_BUCKET, 
+                    'Key': compressed_filename,
+                    # YAHAN FIX HAI: Browser ko force karta hai file download karne ke liye
+                    'ResponseContentDisposition': f'attachment; filename="{compressed_filename}"'
+                },
                 ExpiresIn=3600
             )
             
