@@ -11,6 +11,8 @@
 ## 📝 Project Overview
 CompressedME is an enterprise-grade, highly scalable, serverless web application designed to compress images (JPG, PNG, WEBP, JFIF) and documents (PDFs). Built entirely on AWS using **Infrastructure as Code (IaC)**, it focuses heavily on cost-optimization, data privacy, and DevSecOps best practices.
 
+![Top10News Architecture Diagram](diagram.png)
+
 ## ☁️ Cloud Architecture & DevOps Workflows
 
 ### 1. Serverless Compute & Processing
